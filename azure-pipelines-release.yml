@@ -23,9 +23,9 @@ jobs:
     name: $(onPremWindowsAgent)
   steps:
   - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
-    displayName: 'PowerShell Gallery Packager '
+    displayName: 'PowerShell Gallery Packager'
     inputs:
       apiKey: $(GALLERY_TOKEN)
-      path: $(Build.Repository.LocalPath)
+      path: $(Build.Repository.LocalPath)\Dsb.RobotOrchestration.psm1
     env:
       GALLERY_TOKEN: $(powershell-gallery-token)
