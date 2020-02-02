@@ -1,0 +1,40 @@
+pr:
+  branches:
+    include:
+    - '*' 
+
+variables:
+- name: 'hostedWindowsAgent'
+  value: 'vs2017-win2016'
+- name: 'onPremLinuxAgent'
+  value: 'DsbLinuxAgents'
+- name: 'onPremWindowsAgent'
+  value: 'DsbWindowsAgents'
+
+stages:
+- stage: RunTests
+  displayName: Run Tests
+  jobs:
+  - job: PesterTests
+    displayName: Run Pester tests for powershell scripts 
+    # pool:
+    #   vmImage: vs2017-win2016
+    pool:
+      name: $(onPremWindowsAgent)
+    steps:
+    - task: NuGetToolInstaller@0
+      displayName: Use NuGet 4.x
+      inputs:
+        versionSpec: 4.x
+        checkLatest: true
+    - powershell: |
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+      displayName: Install Nuget and update Pester
+    - powershell: |
+        $files = Get-ChildItem $(Build.SourcesDirectory) -File -Recurse -Include *.ps1*
+        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/Dsb.RobotOrchestration.psm1
+        if ($result.failedCount -ne 0) { 
+            Write-Error "Pester returned errors"
+        }
+      displayName: Run pester tests with code coverage
