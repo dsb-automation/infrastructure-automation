@@ -26,6 +26,6 @@ jobs:
     displayName: 'PowerShell Gallery Packager '
     inputs:
       apiKey: $(GALLERY_TOKEN)
-      path: .
+      path: $(Build.Repository.LocalPath)/Dsb.RobotOrchestration.psm1
     env:
       GALLERY_TOKEN: $(powershell-gallery-token)
