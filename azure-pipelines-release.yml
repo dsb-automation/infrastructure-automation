@@ -1,0 +1,31 @@
+
+name: 'powershell module push'
+
+trigger:
+  branches:
+    include:
+    - releases/*
+
+pr:
+  branches:
+    exclude:
+    - '*'
+     
+variables:
+  - group: 'orch-key-vault-dev'
+  - name: 'onPremWindowsAgent'
+    value: 'DsbWindowsAgents'
+
+jobs:
+- job: PublishModule
+  displayName: Publish module to Powershell gallery
+  pool:
+    name: $(onPremWindowsAgent)
+  steps:
+  - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
+    displayName: 'PowerShell Gallery Packager '
+    inputs:
+      apiKey: $(GALLERY_TOKEN)
+      path: .
+    env:
+      GALLERY_TOKEN: $(powershell-gallery-token)
