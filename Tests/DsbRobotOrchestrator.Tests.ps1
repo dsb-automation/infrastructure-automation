@@ -1,3 +1,5 @@
+$humioToken = $env:HUMIO_INGEST_TOKEN
+
 $here = (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $parentDirectory = (Get-Item $here).parent.FullName
 $moduleName = "DsbRobotOrchestration"
@@ -430,9 +432,23 @@ Describe 'Confirm Filebeats service is running' {
 }
 
 Describe 'Send-HumioEvent' {
-    Context 'Event was successful' {
-        It 'Equals True' {
-            Send-HumioEvent -Token 'blah' | Should Be 200
+    Context 'Event is sent successfully' {
+        It 'Returns True' {
+            $source = 'tests'
+            $event = 'successful-event'
+            $success = $true
+
+            Send-HumioEvent -Token $humioToken -Source $source -Event $event -Success $success | Should Be $true 
+        }
+    }    
+    Context 'Event send fails' {
+        It 'Returns False' {
+            $fakeToken = 'blah'
+            $source = 'tests'
+            $event = 'failure-event'
+            $success = $false
+
+            Send-HumioEvent -Token $fakeToken -Source $source -Event $event -Success $success | Should Be $false 
         }
     }    
     # Calls invoke-webrequest with correct details

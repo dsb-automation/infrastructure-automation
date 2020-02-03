@@ -1,3 +1,5 @@
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -582,55 +584,58 @@ function Get-Blob {
     }
 }
 
-
-
 function Send-HumioEvent {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $true)]
-        [string] $Token
+        [string] $Token,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Source,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Event,
+
+        [Parameter(Mandatory = $true)]
+        [bool] $Success
     )
 
-
+    $timestamp = Get-Date -Format "o"
     $url = 'https://cloud.humio.com/api/v1/ingest/humio-structured'
     $headers = @{
         'Authorization' = 'Bearer ' + $Token;
         'Content-Type' = 'application/json'
     }
 
-    $structuredString = '
+$structuredString = @"
 [
   {
     "tags": {
-      "host": "server1",
-      "source": "application.log"
+      "source": "$Source"
     },
     "events": [
       {
-        "timestamp": "2016-06-06T12:00:00+02:00",
+        "timestamp": "$timestamp",
         "attributes": {
-          "key1": "value1",
-          "key2": "value2"
-        }
-      },
-      {
-        "timestamp": "2016-06-06T12:00:01+02:00",
-        "attributes": {
-          "key1": "value1"
+            "event": $Event,
+            "success": $Success 
         }
       }
     ]
   }
-]'
+]
+"@
 
-    $eventJson = $structuredString | ConvertTo-Json
-    $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
-        -Method 'POST' `
-        -Headers $headers `
-        -Body $structuredString 
-    Write-Host "Status code is {$sendEventRequest.StatusCode}"
-
-    return $sendEventRequest.StatusCode
+    try {
+        $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
+            -Method 'POST' `
+            -Headers $headers `
+            -Body $structuredString 
+    }
+    catch [System.Net.WebException] {
+        return $false
+    }
+    return $sendEventRequest.StatusCode -eq 200
 }
 
 
