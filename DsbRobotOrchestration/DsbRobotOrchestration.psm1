@@ -584,6 +584,7 @@ function Get-Blob {
     }
 }
 
+# TODO: Allow extra params
 function Send-HumioEvent {
     [CmdletBinding()]
     Param (
