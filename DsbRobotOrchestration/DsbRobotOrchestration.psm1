@@ -591,13 +591,20 @@ function Send-HumioEvent {
         [string] $Token,
 
         [Parameter(Mandatory = $true)]
+        [string] $Environment,
+
+        [Parameter(Mandatory = $true)]
         [string] $Source,
 
         [Parameter(Mandatory = $true)]
         [string] $Event,
 
         [Parameter(Mandatory = $true)]
-        [bool] $Success
+        [bool] $Success,
+
+        [Parameter()]
+        [string] $EncounteredError = 'null'
+
     )
 
     $timestamp = Get-Date -Format "o"
@@ -611,6 +618,7 @@ $structuredString = @"
 [
   {
     "tags": {
+      "env": "$Environment",
       "source": "$Source"
     },
     "events": [
@@ -618,7 +626,8 @@ $structuredString = @"
         "timestamp": "$timestamp",
         "attributes": {
             "event": $Event,
-            "success": $Success 
+            "success": $Success,
+            "error": $EncounteredError 
         }
       }
     ]
@@ -626,6 +635,7 @@ $structuredString = @"
 ]
 "@
 
+Write-Host $structuredString
     try {
         $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
             -Method 'POST' `

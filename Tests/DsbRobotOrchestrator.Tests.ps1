@@ -433,12 +433,30 @@ Describe 'Confirm Filebeats service is running' {
 
 Describe 'Send-HumioEvent' {
     Context 'Event is sent successfully' {
-        It 'Returns True' {
+        It 'Returns True without error' {
             $source = 'tests'
             $event = 'successful-event'
             $success = $true
 
-            Send-HumioEvent -Token $humioToken -Source $source -Event $event -Success $success | Should Be $true 
+            Send-HumioEvent -Token $humioToken `
+                -Environment 'dev' `
+                -Source $source `
+                -Event $event `
+                -Success $success | Should Be $true 
+        }
+
+        It 'Returns True with error' {
+            $source = 'tests'
+            $event = 'successful-event'
+            $success = $true
+            $encounteredError = 'Something terrible!'
+
+            Send-HumioEvent -Token $humioToken `
+                -Environment 'dev' `
+                -Source $source `
+                -Event $event `
+                -Success $success `
+                -EncounteredError $encounteredError | Should Be $true 
         }
     }    
     Context 'Event send fails' {
@@ -448,7 +466,11 @@ Describe 'Send-HumioEvent' {
             $event = 'failure-event'
             $success = $false
 
-            Send-HumioEvent -Token $fakeToken -Source $source -Event $event -Success $success | Should Be $false 
+            Send-HumioEvent -Token $fakeToken `
+                -Environment 'dev' `
+                -Source $source `
+                -Event $event `
+                -Success $success | Should Be $false 
         }
     }    
 }
