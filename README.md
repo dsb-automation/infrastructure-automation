@@ -8,4 +8,4 @@ scripts that help provision and configure UiPath robots on Azure machines.
 
 The module is tested and then published to the Powershell Gallery, which can be
 found
-[here](https://www.powershellgallery.com/packages/DsbRobotOrchestration/0.0.11).
+[here](https://www.powershellgallery.com/packages/DsbRobotOrchestration).
