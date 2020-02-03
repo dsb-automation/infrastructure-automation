@@ -1,11 +1,11 @@
 $here = (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $parentDirectory = (Get-Item $here).parent.FullName
-$moduleName = "Dsb.RobotOrchestration"
+$moduleName = "DsbRobotOrchestration"
 
 If (Get-Module $moduleName) {
     Remove-Module $moduleName -Force
 }
-Import-Module "$parentDirectory\$moduleName.psm1" -Force
+Import-Module "$parentDirectory\$moduleName\$moduleName.psm1" -Force
 
 Describe 'Start-Log' {
 

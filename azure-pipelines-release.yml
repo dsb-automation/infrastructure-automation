@@ -15,6 +15,8 @@ variables:
   - group: 'orch-key-vault-dev'
   - name: 'onPremWindowsAgent'
     value: 'DsbWindowsAgents'
+  - name: 'powershellModuleName'
+    value: 'DsbRobotOrchestration'
 
 jobs:
 - job: PublishModule
@@ -22,10 +24,8 @@ jobs:
   pool:
     name: $(onPremWindowsAgent)
   steps:
-  - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
-    displayName: 'PowerShell Gallery Packager '
-    inputs:
-      apiKey: $(GALLERY_TOKEN)
-      path: .
+  - powershell: |
+      Publish-Module -Path $(Build.Repository.LocalPath)\$(powershellModuleName) -NugetApiKey $env:GALLERY_TOKEN
+    displayName: 'PowerShell Gallery Packager'
     env:
       GALLERY_TOKEN: $(powershell-gallery-token)

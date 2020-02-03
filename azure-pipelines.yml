@@ -4,12 +4,10 @@ pr:
     - '*' 
 
 variables:
-- name: 'hostedWindowsAgent'
-  value: 'vs2017-win2016'
-- name: 'onPremLinuxAgent'
-  value: 'DsbLinuxAgents'
 - name: 'onPremWindowsAgent'
   value: 'DsbWindowsAgents'
+- name: 'powershellModuleName'
+  value: 'DsbRobotOrchestration'
 
 stages:
 - stage: RunTests
@@ -30,8 +28,8 @@ stages:
         Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        $files = Get-ChildItem $(Build.SourcesDirectory) -File -Recurse -Include *.ps1*
-        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/Dsb.RobotOrchestration.psm1
+        $files = Get-ChildItem $(Build.SourcesDirectory)/($powershellModuleName) -File -Recurse -Include *.ps1*
+        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/($powershellModuleName)/($powershellModuleName).psm1
         if ($result.failedCount -ne 0) { 
             Write-Error "Pester returned errors"
         }
