@@ -451,6 +451,4 @@ Describe 'Send-HumioEvent' {
             Send-HumioEvent -Token $fakeToken -Source $source -Event $event -Success $success | Should Be $false 
         }
     }    
-    # Calls invoke-webrequest with correct details
-    # Throws error when api token incorrect
 }
