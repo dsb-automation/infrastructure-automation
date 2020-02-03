@@ -582,6 +582,19 @@ function Get-Blob {
     }
 }
 
+
+
+function Send-HumioEvent {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $Token
+    )
+
+    return $true
+}
+
+
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
 Export-ModuleMember -Function Wait-ForService
@@ -597,7 +610,7 @@ Export-ModuleMember -Function Start-FilebeatService
 Export-ModuleMember -Function Remove-OldFilebeatFolders
 Export-ModuleMember -Function Confirm-FilebeatServiceRunning
 Export-ModuleMember -Function Get-Blob
-
+Export-ModuleMember -Function Send-HumioEvent
 
 <#
 .SYNOPSIS
