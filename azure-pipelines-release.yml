@@ -15,6 +15,8 @@ variables:
   - group: 'orch-key-vault-dev'
   - name: 'onPremWindowsAgent'
     value: 'DsbWindowsAgents'
+  - name: 'powershellModuleName'
+    value: 'DsbRobotOrchestration'
 
 jobs:
 - job: PublishModule
@@ -26,6 +28,6 @@ jobs:
     displayName: 'PowerShell Gallery Packager'
     inputs:
       apiKey: $(GALLERY_TOKEN)
-      path: $(Build.Repository.LocalPath)\Dsb.RobotOrchestration.psm1
+      path: $(Build.Repository.LocalPath)\$(powershellModuleName)
     env:
       GALLERY_TOKEN: $(powershell-gallery-token)
