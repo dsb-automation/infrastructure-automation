@@ -428,3 +428,11 @@ Describe 'Confirm Filebeats service is running' {
         }
     }
 }
+
+Describe 'Send-HumioEvent' {
+    Context 'Event was successful' {
+        It 'Equals True' {
+            Send-HumioEvent -Token 'blah' | Should Be $true
+        }
+    }    
+}
