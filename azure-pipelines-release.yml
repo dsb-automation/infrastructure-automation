@@ -25,6 +25,7 @@ jobs:
     name: $(onPremWindowsAgent)
   steps:
   - powershell: |
+      echo $env:GALLERY_TOKEN
       Publish-Module -Path $(Build.Repository.LocalPath)\$(powershellModuleName) -NugetApiKey $env:GALLERY_TOKEN -Force
     displayName: 'PowerShell Gallery Packager '
     env:
