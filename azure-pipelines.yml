@@ -4,6 +4,7 @@ pr:
     - '*' 
 
 variables:
+- group: 'orch-key-vault-dev'
 - name: 'onPremWindowsAgent'
   value: 'DsbWindowsAgents'
 - name: 'powershellModuleName'
@@ -34,3 +35,5 @@ stages:
             Write-Error "Pester returned errors"
         }
       displayName: Run pester tests with code coverage
+      env:
+        HUMIO_INGEST_TOKEN: $(humio-ingest-token)

@@ -1,3 +1,5 @@
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -582,6 +584,61 @@ function Get-Blob {
     }
 }
 
+function Send-HumioEvent {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $Token,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Source,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Event,
+
+        [Parameter(Mandatory = $true)]
+        [bool] $Success
+    )
+
+    $timestamp = Get-Date -Format "o"
+    $url = 'https://cloud.humio.com/api/v1/ingest/humio-structured'
+    $headers = @{
+        'Authorization' = 'Bearer ' + $Token;
+        'Content-Type' = 'application/json'
+    }
+
+$structuredString = @"
+[
+  {
+    "tags": {
+      "source": "$Source"
+    },
+    "events": [
+      {
+        "timestamp": "$timestamp",
+        "attributes": {
+            "event": $Event,
+            "success": $Success 
+        }
+      }
+    ]
+  }
+]
+"@
+
+    try {
+        $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
+            -Method 'POST' `
+            -Headers $headers `
+            -Body $structuredString 
+    }
+    catch [System.Net.WebException] {
+        return $false
+    }
+    return $sendEventRequest.StatusCode -eq 200
+}
+
+
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
 Export-ModuleMember -Function Wait-ForService
@@ -597,7 +654,7 @@ Export-ModuleMember -Function Start-FilebeatService
 Export-ModuleMember -Function Remove-OldFilebeatFolders
 Export-ModuleMember -Function Confirm-FilebeatServiceRunning
 Export-ModuleMember -Function Get-Blob
-
+Export-ModuleMember -Function Send-HumioEvent
 
 <#
 .SYNOPSIS
