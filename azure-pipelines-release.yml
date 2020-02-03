@@ -23,12 +23,12 @@ jobs:
   displayName: Publish module to Powershell gallery
   pool:
     name: $(onPremWindowsAgent)
-  variables: 
-    - name: GALLERY_TOKEN 
-      value: $(powershell-gallery-token)
   steps:
   - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
     displayName: 'PowerShell Gallery Packager '
     inputs:
-      apiKey: $(GALLERY_TOKEN)
+      apiKey: $env:GALLERY_TOKEN
       path: $(Build.Repository.LocalPath)\$(powershellModuleName)
+    env: 
+      - name: GALLERY_TOKEN 
+        value: $(powershell-gallery-token)
