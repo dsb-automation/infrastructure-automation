@@ -591,7 +591,46 @@ function Send-HumioEvent {
         [string] $Token
     )
 
-    return $true
+
+    $url = 'https://cloud.humio.com/api/v1/ingest/humio-structured'
+    $headers = @{
+        'Authorization' = 'Bearer ' + $Token;
+        'Content-Type' = 'application/json'
+    }
+
+    $structuredString = '
+[
+  {
+    "tags": {
+      "host": "server1",
+      "source": "application.log"
+    },
+    "events": [
+      {
+        "timestamp": "2016-06-06T12:00:00+02:00",
+        "attributes": {
+          "key1": "value1",
+          "key2": "value2"
+        }
+      },
+      {
+        "timestamp": "2016-06-06T12:00:01+02:00",
+        "attributes": {
+          "key1": "value1"
+        }
+      }
+    ]
+  }
+]'
+
+    $eventJson = $structuredString | ConvertTo-Json
+    $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
+        -Method 'POST' `
+        -Headers $headers `
+        -Body $structuredString 
+    Write-Host "Status code is {$sendEventRequest.StatusCode}"
+
+    return $sendEventRequest.StatusCode
 }
 
 

@@ -432,7 +432,9 @@ Describe 'Confirm Filebeats service is running' {
 Describe 'Send-HumioEvent' {
     Context 'Event was successful' {
         It 'Equals True' {
-            Send-HumioEvent -Token 'blah' | Should Be $true
+            Send-HumioEvent -Token 'blah' | Should Be 200
         }
     }    
+    # Calls invoke-webrequest with correct details
+    # Throws error when api token incorrect
 }
