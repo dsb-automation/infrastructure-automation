@@ -27,5 +27,5 @@ jobs:
   - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
     displayName: 'PowerShell Gallery Packager '
     inputs:
-      apiKey: $(powershell-galler-token)
+      apiKey: $(powershell-gallery-token)
       path: $(Build.Repository.LocalPath)\$(powershellModuleName)
