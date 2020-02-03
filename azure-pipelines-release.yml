@@ -24,10 +24,8 @@ jobs:
   pool:
     name: $(onPremWindowsAgent)
   steps:
-  - task: kenakamu.PSGalleryPublisher.powershell-gallery-publish-task.PSGalleryPackager@0
+  - powershell: |
+      Publish-Module -Path $(Build.Repository.LocalPath)\$(powershellModuleName) -NugetApiKey (GALLERY_TOKEN)
     displayName: 'PowerShell Gallery Packager'
-    inputs:
-      apiKey: $(GALLERY_TOKEN)
-      path: $(Build.Repository.LocalPath)\$(powershellModuleName)
     env:
       GALLERY_TOKEN: $(powershell-gallery-token)
