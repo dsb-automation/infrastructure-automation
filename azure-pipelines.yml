@@ -27,6 +27,10 @@ stages:
     - powershell: |
         Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
         Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+
+        # Install the package "functional" to do comparisons on hashtables in 
+        # tests. Package can be found: https://www.powershellgallery.com/packages/functional 
+        Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
         $files = Get-ChildItem $(Build.SourcesDirectory)/($powershellModuleName) -File -Recurse -Include *.ps1*

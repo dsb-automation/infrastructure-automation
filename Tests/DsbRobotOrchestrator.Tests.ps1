@@ -9,6 +9,8 @@ If (Get-Module $moduleName) {
 }
 Import-Module "$parentDirectory\$moduleName\$moduleName.psm1" -Force
 
+
+# =============== Begin Tests ==================
 Describe 'Start-Log' {
 
     It 'Creates new directory if logpath does not exist' {
@@ -445,10 +447,10 @@ Describe 'Send-HumioEvent' {
                 -Success $success | Should Be $true 
         }
 
-        It 'Returns True with error' {
+        It 'Returns True when sending with error' {
             $source = 'tests'
-            $event = 'successful-event'
-            $success = $true
+            $event = 'failed-event'
+            $success = $false
             $encounteredError = 'Something terrible!'
 
             Send-HumioEvent -Token $humioToken `
@@ -457,6 +459,40 @@ Describe 'Send-HumioEvent' {
                 -Event $event `
                 -Success $success `
                 -EncounteredError $encounteredError | Should Be $true 
+        }
+
+        It 'Returns True when sending successful event with attributes' {
+            $source = 'tests'
+            $event = 'successful-event'
+            $success = $true
+            $extraAttributes = @{
+                red = "fish";
+                blue = "fish"
+            }
+
+            Send-HumioEvent -Token $humioToken `
+                -Environment 'dev' `
+                -Source $source `
+                -Event $event `
+                -Success $success `
+                -ExtraAttributes $extraAttributes | Should Be $true 
+        }
+
+        It 'Returns True when sending failed event with attributes' {
+            $source = 'tests'
+            $event = 'failed-event'
+            $success = $false
+            $encounteredError = 'The reactor core is melted!'
+            $extraAttributes = @{
+                disaster = "Chernobyl"
+            }
+
+            Send-HumioEvent -Token $humioToken `
+                -Environment 'dev' `
+                -Source $source `
+                -Event $event `
+                -Success $success `
+                -ExtraAttributes $extraAttributes | Should Be $true 
         }
     }    
     Context 'Event send fails' {
@@ -473,4 +509,21 @@ Describe 'Send-HumioEvent' {
                 -Success $success | Should Be $false 
         }
     }    
+}
+
+Describe 'Merge-HashTables' {
+    Context 'Two unique hashtables' {
+        It 'Includes all unique key-values' {
+            $hashA = @{ hello = "world" }
+            $hashB = @{ hej = "verden" }
+
+            $expectedHash = @{
+                hello = "world";
+                hej = "verden"
+            }
+
+            $mergedHash = Merge-HashTables -hashOne $hashA -hashTwo $hashB
+            $expectedHash, $mergedHash | Test-Equality | Should -BeTrue
+        }
+    }
 }
