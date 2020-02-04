@@ -665,8 +665,9 @@ function Get-SendSmsBlob {
         Write-Log -LogPath $LogFile -Message "$sendSmsDirectory existed, exiting now" -Severity "Info"
     }
 
-    # TODO: Return whether or not the file exists
     Remove-Item -Path $tempDirectory -Recurse -Force | Out-Null
+
+    return Test-Path -Path "C:/$sendSmsDirectory" -IsValid
 }
 
 function Merge-HashTables {
