@@ -20,18 +20,6 @@ filebeat.inputs:
 
 - type: log
   enabled: true
-  # Paths that should be crawled and fetched. Glob based paths.
-  paths:
-    - C:\ProgramData\AutomationAzureOrchestration\*.log
-  encoding: utf-8
-  fields:
-    "type": "azure-vms"
-  multiline.pattern: '^\s{3,}'
-  multiline.negate: false
-  multiline.match: after
-
-- type: log
-  enabled: true
   paths:
     - C:\Users\*\AppData\Local\UiPath\Logs\*Studio.log
   encoding: utf-8

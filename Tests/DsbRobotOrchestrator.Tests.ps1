@@ -527,3 +527,142 @@ Describe 'Merge-HashTables' {
         }
     }
 }
+
+Describe 'Get-SendSmsBlob' {
+    $accountName = "StorageAccountName"
+    $accountKey = "VerySecret"
+    $accountContainer = "StorageAccountContainer"
+    $fakePath = "C:/temp"
+
+    $sendSmsDirectory = "PR_SMS_UDSENDELSE"
+    $sendSmsCDrive = "C:/$sendSmsDirectory"
+    $sendSmsZip = "$sendSmsDirectory.zip"
+
+    Mock -Verifiable -CommandName Join-Path { return "C:/temp" } -ModuleName $moduleName
+
+    Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+    Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+    Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+    Context 'No previous installation of SendSms exists' {
+
+        Mock -Verifiable -CommandName Test-Path { return $false } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive} `
+            -ModuleName $moduleName
+        
+        Mock -Verifiable -CommandName Test-Path { return $true } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive -and $PSBoundParameters['IsValid'] -eq $true} `
+            -ModuleName $moduleName
+
+        It 'Calls Get-Blob with correct params' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+            
+            Assert-MockCalled Get-Blob -Exactly 1 `
+               {$FullLogPath -eq $fakePath `
+                -and $StorageAccountKey -eq $accountKey `
+                -and $StorageAccountName -eq $accountName `
+                -and $StorageAccountContainer -eq $accountContainer `
+                -and $BlobFile -eq $sendSmsZip `
+                -and $Outpath -eq $fakePath} `
+               -ModuleName $moduleName            
+        }
+
+        It 'Calls Expand-Archive' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Expand-Archive `
+                -ParameterFilter {$Path -eq "$fakePath/$sendSmsZip" -and $DestinationPath -eq "C:/" -and $PSBoundParameters['Force'] -eq $true } `
+                -ModuleName $moduleName 
+
+        }
+
+        It 'Calls Remove-Item' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Remove-Item `
+                -ParameterFilter {$Path -eq $fakePath -and $PSBoundParameters['Force'] -eq $true -and $PSBoundParameters['Recurse'] -eq $true} `
+                -ModuleName $moduleName 
+        }
+
+        It 'Calls returns true' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer | Should -BeTrue
+        }
+    }
+
+    Context 'Exception thrown when downloading blob' {
+        
+        Mock -Verifiable -CommandName Test-Path { return $false } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive} `
+            -ModuleName $moduleName
+
+        It 'Throws an error when Get-Blob throws' {
+            Mock -Verifiable -CommandName Get-Blob { Throw 'Big problem'} -ModuleName $moduleName
+
+            { Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer } | Should Throw
+        }
+
+        It 'Throws an error when Expand-Archive throws' {
+            Mock -Verifiable -CommandName Expand-Archive { Throw 'Big problem'} -ModuleName $moduleName
+
+            { Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer } | Should Throw
+        }
+    }
+
+    Context 'Previous SendSms file existed' {
+
+        Mock -Verifiable -CommandName Test-Path { return $true } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive} `
+            -ModuleName $moduleName
+
+        Mock -Verifiable -CommandName Test-Path { return $false } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive -and $PSBoundParameters['IsValid'] -eq $true} `
+            -ModuleName $moduleName
+
+        It 'Does not call Get-Blob' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Get-Blob -Exactly 0 -ModuleName $moduleName
+        }
+
+        It 'Removes temp directory' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Remove-Item `
+                -ParameterFilter {$Path -eq $fakePath -and $PSBoundParameters['Force'] -eq $true -and $PSBoundParameters['Recurse'] -eq $true} `
+                -ModuleName $moduleName 
+        }
+
+        It 'Returns false' {
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer | Should -BeFalse
+        }
+    }
+
+}
