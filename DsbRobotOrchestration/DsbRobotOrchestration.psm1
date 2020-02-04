@@ -584,6 +584,29 @@ function Get-Blob {
     }
 }
 
+function Merge-HashTables {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable] $hashOne,
+        
+        [Parameter(Mandatory = $true)]
+        [hashtable] $hashTwo
+    )
+
+    $keys = $hashOne.getenumerator() | foreach-object {$_.key}
+    $keys | foreach-object {
+        $key = $_
+        if ($hashTwo.containskey($key))
+        {
+            $hashOne.remove($key)
+        }
+    }
+    $hashTwo = $hashOne + $hashTwo
+    return $hashTwo
+}
+
+
+# TODO: Allow extra params
 function Send-HumioEvent {
     [CmdletBinding()]
     Param (
@@ -603,9 +626,20 @@ function Send-HumioEvent {
         [bool] $Success,
 
         [Parameter()]
-        [string] $EncounteredError = 'null'
+        [string] $EncounteredError = 'null',
+
+        [Parameter()]
+        [hashtable] $ExtraAttributes = @{}
 
     )
+
+    $standardAttributes = @{
+        event = $Event;
+        success = $Success;
+        error = $EncounteredError
+    }
+    $combinedAttributes = Merge-HashTables -hashOne $standardAttributes -hashTwo $ExtraAttributes
+    $attributesString = $combinedAttributes | ConvertTo-Json
 
     $timestamp = Get-Date -Format "o"
     $url = 'https://cloud.humio.com/api/v1/ingest/humio-structured'
@@ -624,18 +658,13 @@ $structuredString = @"
     "events": [
       {
         "timestamp": "$timestamp",
-        "attributes": {
-            "event": $Event,
-            "success": $Success,
-            "error": $EncounteredError 
-        }
+        "attributes": $attributesString 
       }
     ]
   }
 ]
 "@
 
-Write-Host $structuredString
     try {
         $sendEventRequest = Invoke-WebRequest -UseBasicParsing $url `
             -Method 'POST' `
@@ -664,6 +693,7 @@ Export-ModuleMember -Function Start-FilebeatService
 Export-ModuleMember -Function Remove-OldFilebeatFolders
 Export-ModuleMember -Function Confirm-FilebeatServiceRunning
 Export-ModuleMember -Function Get-Blob
+Export-ModuleMember -Function Merge-HashTables
 Export-ModuleMember -Function Send-HumioEvent
 
 <#
