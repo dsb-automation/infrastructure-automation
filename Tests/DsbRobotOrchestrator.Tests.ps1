@@ -530,22 +530,16 @@ Describe 'Merge-HashTables' {
 
 Describe 'Get-SendSmsBlob' {
     Context 'No previous installation happy path' {
-        It 'Does something' {
+        $accountName = "StorageAccountName"
+        $accountKey = "VerySecret"
+        $accountContainer = "StorageAccountContainer"
+        $fakePath = "C:/temp"
 
-            $accountName = "StorageAccountName"
-            $accountKey = "VerySecret"
-            $accountContainer = "StorageAccountContainer"
-            $date = "1234"
-            $fakePath = "C:/temp"
-            $tempDirectory = (Join-Path $ENV:TEMP "SendSms-{$date}")
+        $sendSmsDirectory = "PR_SMS_UDSENDELSE"
+        $sendSmsCDrive = "C:/$sendSmsDirectory"
+        $sendSmsZip = "$sendSmsDirectory.zip"
 
-            $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
-            $LogName = "Retrieve-SendSms-{$date}.log"
-            $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
-
-            $sendSmsDirectory = "PR_SMS_UDSENDELSE"
-            $sendSmsCDrive = "C:/$sendSmsDirectory"
-            $sendSmsZip = "$sendSmsDirectory.zip"
+        It 'Calls Get-Blob with correct params' {
 
             Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
             Mock -Verifiable -CommandName Join-Path { return "C:/temp" } -ModuleName $moduleName
