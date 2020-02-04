@@ -231,7 +231,7 @@ function Get-FilebeatConfig {
         Remove-Item -Path $filebeatYaml -Force
     }
 
-    $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
+    $configUri = "https://github.com/dsb-automation/infrastructure-automation/blob/master/filebeat.yml"
     Write-Host "Attempting to download filebeat config from: $configUri"
     Write-Log -LogPath $FullLogPath -Message "Attempting to download filebeat config from: $configUri" -Severity "Info"
     
