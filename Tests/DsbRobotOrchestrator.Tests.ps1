@@ -604,6 +604,29 @@ Describe 'Get-SendSmsBlob' {
         }
     }
 
+    Context 'Exception thrown when downloading blob' {
+        
+        Mock -Verifiable -CommandName Test-Path { return $false } `
+            -ParameterFilter {$Path -eq $sendSmsCDrive} `
+            -ModuleName $moduleName
+
+        It 'Throws an error when Get-Blob throws' {
+            Mock -Verifiable -CommandName Get-Blob { Throw 'Big problem'} -ModuleName $moduleName
+
+            { Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer } | Should Throw
+        }
+
+        It 'Throws an error when Expand-Archive throws' {
+            Mock -Verifiable -CommandName Expand-Archive { Throw 'Big problem'} -ModuleName $moduleName
+
+            { Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer } | Should Throw
+        }
+    }
+
     Context 'Previous SendSms file existed' {
 
         Mock -Verifiable -CommandName Test-Path { return $true } `
@@ -641,4 +664,5 @@ Describe 'Get-SendSmsBlob' {
                 -StorageAccountContainer $accountContainer | Should -BeFalse
         }
     }
+
 }

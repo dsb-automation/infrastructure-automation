@@ -646,7 +646,8 @@ function Get-SendSmsBlob {
                 -StorageAccountName $StorageAccountName `
                 -StorageAccountContainer $StorageAccountContainer `
                 -BlobFile $sendSmsZip `
-                -OutPath $tempDirectory
+                -OutPath $tempDirectory `
+                -ErrorAction Stop
 
             Write-Host "Expanding $tempDirectory/$sendSmsZip to C drive"
             Write-Log -LogPath $LogFile -Message "Expanding $tempDirectory/$sendSmsZip to C drive" -Severity "Info"
@@ -658,6 +659,7 @@ function Get-SendSmsBlob {
         Catch {
             Write-Log -LogPath $LogFile -Message "There was an error retrieving SendSMS: $_.Exception.Message" -Severity "Error"
             Write-Host "There was an error retrieving SendSMS: $_.Exception.Message"
+            Remove-Item -Path $tempDirectory -Recurse -Force | Out-Null
             Throw "There was an error retrieving SendSMS: $_.Exception.Message"
         }
     } Else {
