@@ -529,15 +529,16 @@ Describe 'Merge-HashTables' {
 }
 
 Describe 'Get-SendSmsBlob' {
-    Context 'No previous installation happy path' {
-        $accountName = "StorageAccountName"
-        $accountKey = "VerySecret"
-        $accountContainer = "StorageAccountContainer"
-        $fakePath = "C:/temp"
+    $accountName = "StorageAccountName"
+    $accountKey = "VerySecret"
+    $accountContainer = "StorageAccountContainer"
+    $fakePath = "C:/temp"
 
-        $sendSmsDirectory = "PR_SMS_UDSENDELSE"
-        $sendSmsCDrive = "C:/$sendSmsDirectory"
-        $sendSmsZip = "$sendSmsDirectory.zip"
+    $sendSmsDirectory = "PR_SMS_UDSENDELSE"
+    $sendSmsCDrive = "C:/$sendSmsDirectory"
+    $sendSmsZip = "$sendSmsDirectory.zip"
+
+    Context 'No previous installation of SendSms exists' {
 
         It 'Calls Get-Blob with correct params' {
 
@@ -581,7 +582,30 @@ Describe 'Get-SendSmsBlob' {
                 -StorageAccountKey $accountKey `
                 -StorageAccountContainer $accountContainer 
 
-            Assert-MockCalled Expand-Archive -ParameterFilter {$Path -eq "$fakePath/$sendSmsZip" -and $DestinationPath -eq "C:/" -and $PSBoundParameters['Force'] -eq $true } `
+            Assert-MockCalled Expand-Archive `
+                -ParameterFilter {$Path -eq "$fakePath/$sendSmsZip" -and $DestinationPath -eq "C:/" -and $PSBoundParameters['Force'] -eq $true } `
+                -ModuleName $moduleName 
+
+        }
+
+        It 'Calls Remove-Item' {
+
+            Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Join-Path { return "C:/temp" } -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+            Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+            Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Remove-Item `
+                -ParameterFilter {$Path -eq $fakePath -and $PSBoundParameters['Force'] -eq $true -and $PSBoundParameters['Recurse'] -eq $true} `
                 -ModuleName $moduleName 
 
         }

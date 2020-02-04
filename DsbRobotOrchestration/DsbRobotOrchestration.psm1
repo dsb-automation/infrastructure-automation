@@ -666,7 +666,7 @@ function Get-SendSmsBlob {
     }
 
     # TODO: Return whether or not the file exists
-    Remove-Item $tempDirectory -Recurse -Force | Out-Null
+    Remove-Item -Path $tempDirectory -Recurse -Force | Out-Null
 }
 
 function Merge-HashTables {
