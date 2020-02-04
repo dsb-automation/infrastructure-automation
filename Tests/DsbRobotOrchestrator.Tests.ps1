@@ -527,3 +527,50 @@ Describe 'Merge-HashTables' {
         }
     }
 }
+
+Describe 'Get-SendSmsBlob' {
+    Context 'No previous installation happy path' {
+        It 'Does something' {
+
+            $accountName = "StorageAccountName"
+            $accountKey = "VerySecret"
+            $accountContainer = "StorageAccountContainer"
+            $date = "1234"
+            $fakePath = "C:/temp"
+            $tempDirectory = (Join-Path $ENV:TEMP "SendSms-{$date}")
+
+            $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
+            $LogName = "Retrieve-SendSms-{$date}.log"
+            $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
+
+            $sendSmsDirectory = "PR_SMS_UDSENDELSE"
+            $sendSmsCDrive = "C:/$sendSmsDirectory"
+            $sendSmsZip = "$sendSmsDirectory.zip"
+
+            Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Join-Path { return "C:/temp" } -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+            Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+            Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+            
+            Assert-VerifiableMock
+
+            Assert-MockCalled Get-Blob -Exactly 1 `
+               {$FullLogPath -eq $fakePath `
+                -and $StorageAccountKey -eq $accountKey `
+                -and $StorageAccountName -eq $accountName `
+                -and $StorageAccountContainer -eq $accountContainer `
+                -and $BlobFile -eq $sendSmsZip `
+                -and $Outpath -eq $fakePath} `
+               -ModuleName $moduleName            
+        }
+    }
+}
