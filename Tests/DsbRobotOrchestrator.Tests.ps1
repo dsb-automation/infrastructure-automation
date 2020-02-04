@@ -555,8 +555,6 @@ Describe 'Get-SendSmsBlob' {
                 -StorageAccountKey $accountKey `
                 -StorageAccountContainer $accountContainer 
             
-            Assert-VerifiableMock
-
             Assert-MockCalled Get-Blob -Exactly 1 `
                {$FullLogPath -eq $fakePath `
                 -and $StorageAccountKey -eq $accountKey `
@@ -565,6 +563,27 @@ Describe 'Get-SendSmsBlob' {
                 -and $BlobFile -eq $sendSmsZip `
                 -and $Outpath -eq $fakePath} `
                -ModuleName $moduleName            
+        }
+
+        It 'Calls Expand-Archive' {
+
+            Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Join-Path { return "C:/temp" } -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+            Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+            Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+            Get-SendSmsBlob -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -StorageAccountContainer $accountContainer 
+
+            Assert-MockCalled Expand-Archive -ParameterFilter {$Path -eq "$fakePath/$sendSmsZip" -and $DestinationPath -eq "C:/" -and $PSBoundParameters['Force'] -eq $true } `
+                -ModuleName $moduleName 
+
         }
     }
 }
