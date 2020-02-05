@@ -862,7 +862,6 @@ function Invoke-AzureRmVmScript {
 
     process
     {
-
         $CommonParams = @{
             ResourceGroupName = $ResourceGroupName
             VMName = $VMName
@@ -974,7 +973,6 @@ function Invoke-AzureRmVmScript {
             continue
         }
 
-        # We have a script in place, set up an extension!
         $Output = $Null
         Write-Verbose "Adding CustomScriptExtension to VM '$VMName' in resource group '$ResourceGroupName'"
         Try
