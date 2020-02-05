@@ -1006,11 +1006,6 @@ function Invoke-AzureRmVmScript {
                                                              -Argument $ScriptArguments `
                                                              -ErrorAction Stop                   
             }
-
-            if($Output.StatusCode -notlike 'OK')
-            {
-                Throw "Set-AzureRmVMCustomScriptExtension output seems off:`n$($Output | Format-List | Out-String)"
-            }
         }
         Catch
         {

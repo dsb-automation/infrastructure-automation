@@ -696,4 +696,33 @@ Describe 'Invoke-AzureRmVmScript' {
                 -ExtensionName $extensionName | Should -BeTrue
         }
     }
+    Context 'Sad path' {
+        It 'Returns false on failure' {
+
+            Mock -Verifiable -CommandName Get-AzureRmVm { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Remove-AzureRmVMCustomScriptExtension -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-AzureRmStorageAccountKey -ModuleName $moduleName
+            Mock -Verifiable -CommandName New-AzureStorageContext -ModuleName $moduleName
+            Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-AzureStorageBlob -ModuleName $moduleName
+            Mock -Verifiable -CommandName Set-AzureStorageBlobContent { [PSCustomObject]@{Name = "Get-Something.ps1" } } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Set-AzureRmVMCustomScriptExtension { [PSCustomObject]@{StatusCode = "Terrible!" } } -ModuleName $moduleName
+            
+            $resourceGroup = "azure-rg"
+            $vmName = "MyVm"
+            $accountName = "storageaccount"
+            $accountKey = "secretkey"
+            $scriptName = "Get-Something.ps1"
+            $scriptBlock = { Write-Host "Hello world" }
+            $extensionName = "Get-Something"
+
+            Invoke-AzureRmVmScript -ScriptFilename $scriptName `
+                -ResourceGroupName $resourceGroup `
+                -VMName $vmName `
+                -StorageAccountName $accountName `
+                -StorageAccountKey $accountKey `
+                -ScriptBlock $scriptBlock `
+                -ExtensionName $extensionName | Should -BeFalse
+        }
+    }
 }
