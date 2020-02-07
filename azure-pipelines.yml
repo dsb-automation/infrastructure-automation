@@ -9,6 +9,8 @@ variables:
   value: 'DsbWindowsAgents'
 - name: 'powershellModuleName'
   value: 'DsbRobotOrchestration'
+- name: 'runTestsWithCoverage'
+  value: false
 
 stages:
 - stage: RunTests
@@ -33,9 +35,14 @@ stages:
         Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        $result = Invoke-Pester -PassThru -CodeCoverage ./$(powershellModuleName)/$(powershellModuleName).psm1
-        if ($result.failedCount -ne 0) { 
-            Throw "Pester returned errors"
+        if ($(runTestsWithCoverage) -eq "true") {
+          $result = Invoke-Pester -PassThru -CodeCoverage ./$(powershellModuleName)/$(powershellModuleName).psm1
+          if ($result.failedCount -ne 0) { 
+              Throw "There were failing tests"
+          }
+        } 
+        else {
+          Invoke-Pester
         }
       displayName: Run pester tests with code coverage
       workingDirectory: $(Build.Repository.LocalPath)
