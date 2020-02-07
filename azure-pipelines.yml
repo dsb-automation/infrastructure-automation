@@ -19,7 +19,7 @@ stages:
   - job: PesterTests
     displayName: Run Pester tests for powershell scripts 
     pool:
-      vmName: 'windows-latest'
+      vmImage: 'windows-latest'
     steps:
     - task: NuGetToolInstaller@0
       displayName: Use NuGet 4.x
