@@ -720,3 +720,33 @@ Describe 'Invoke-AzureRmVmScript' {
         }
     }
 }
+
+Describe 'Connect-RobotVmOrchestrator' {
+    Context 'Happy path' {
+        It 'Returns true when successfully connected' {
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Download-String {
+return @"
+[
+    {
+        "name": "$env:computername",
+        "key": "secret key"
+    }
+]
+"@ } -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-Service -ModuleName $moduleName
+            Mock -Verifiable -CommandName Start-Process -ModuleName $moduleName
+            Mock -Verifiable -CommandName Wait-ForService -ModuleName $moduleName
+            Mock -Verifiable -CommandName cmd { $null } -ModuleName $moduleName
+
+            Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" | Should -BeTrue
+        }
+    }
+}
