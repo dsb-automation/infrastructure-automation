@@ -5,10 +5,10 @@ pr:
 
 variables:
 - group: 'orch-key-vault-dev'
-- name: 'onPremWindowsAgent'
-  value: 'DsbWindowsAgents'
 - name: 'powershellModuleName'
   value: 'DsbRobotOrchestration'
+- name: 'runTestsWithCoverage'
+  value: '$false'
 
 stages:
 - stage: RunTests
@@ -17,7 +17,7 @@ stages:
   - job: PesterTests
     displayName: Run Pester tests for powershell scripts 
     pool:
-      name: $(onPremWindowsAgent)
+      vmImage: 'windows-latest'
     steps:
     - task: NuGetToolInstaller@0
       displayName: Use NuGet 4.x
@@ -33,11 +33,18 @@ stages:
         Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        $files = Get-ChildItem $(Build.SourcesDirectory)/($powershellModuleName) -File -Recurse -Include *.ps1*
-        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/($powershellModuleName)/($powershellModuleName).psm1
-        if ($result.failedCount -ne 0) { 
-            Write-Error "Pester returned errors"
+        $withCoverage = $(runTestsWithCoverage) -eq $true
+        $results = $null;
+        if ($withCoverage) {
+          $results = Invoke-Pester -PassThru -CodeCoverage ./$(powershellModuleName)/$(powershellModuleName).psm1
+        } 
+        else {
+          $results = Invoke-Pester -PassThru
+        }
+        if ($results.failedCount -ne 0) { 
+            Throw "There were failing tests"
         }
       displayName: Run pester tests with code coverage
+      workingDirectory: $(Build.Repository.LocalPath)
       env:
         HUMIO_INGEST_TOKEN: $(humio-ingest-token)

@@ -107,7 +107,7 @@ Describe 'Get-FilebeatConfig' {
 
     It 'Calls download-file with the correct params' {
         $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
-        $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
+        $configUri = "https://github.com/dsb-automation/infrastructure-automation/blob/master/filebeat.yml"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
@@ -667,16 +667,17 @@ Describe 'Get-SendSmsBlob' {
 }
 
 Describe 'Invoke-AzureRmVmScript' {
+    Mock -Verifiable -CommandName Get-AzureRmVM { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Remove-AzureRmVMCustomScriptExtension -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-AzureRmStorageAccountKey -ModuleName $moduleName
+    Mock -Verifiable -CommandName New-AzureStorageContext -ModuleName $moduleName
+    Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-AzureStorageBlob -ModuleName $moduleName
+    Mock -Verifiable -CommandName Set-AzureStorageBlobContent { [PSCustomObject]@{Name = "Get-Something.ps1" } } -ModuleName $moduleName
+
     Context 'Happy path' {
         It 'Returns true on success' {
 
-            Mock -Verifiable -CommandName Get-AzureRmVm { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
-            Mock -Verifiable -CommandName Remove-AzureRmVMCustomScriptExtension -ModuleName $moduleName
-            Mock -Verifiable -CommandName Get-AzureRmStorageAccountKey -ModuleName $moduleName
-            Mock -Verifiable -CommandName New-AzureStorageContext -ModuleName $moduleName
-            Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
-            Mock -Verifiable -CommandName Get-AzureStorageBlob -ModuleName $moduleName
-            Mock -Verifiable -CommandName Set-AzureStorageBlobContent { [PSCustomObject]@{Name = "Get-Something.ps1" } } -ModuleName $moduleName
             Mock -Verifiable -CommandName Set-AzureRmVMCustomScriptExtension { [PSCustomObject]@{StatusCode = "OK" } } -ModuleName $moduleName
             
             $resourceGroup = "azure-rg"
@@ -699,13 +700,6 @@ Describe 'Invoke-AzureRmVmScript' {
     Context 'Sad path' {
         It 'Returns false on failure' {
 
-            Mock -Verifiable -CommandName Get-AzureRmVm { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
-            Mock -Verifiable -CommandName Remove-AzureRmVMCustomScriptExtension -ModuleName $moduleName
-            Mock -Verifiable -CommandName Get-AzureRmStorageAccountKey -ModuleName $moduleName
-            Mock -Verifiable -CommandName New-AzureStorageContext -ModuleName $moduleName
-            Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
-            Mock -Verifiable -CommandName Get-AzureStorageBlob -ModuleName $moduleName
-            Mock -Verifiable -CommandName Set-AzureStorageBlobContent { [PSCustomObject]@{Name = "Get-Something.ps1" } } -ModuleName $moduleName
             Mock -Verifiable -CommandName Set-AzureRmVMCustomScriptExtension { [PSCustomObject]@{StatusCode = "Terrible!" } } -ModuleName $moduleName
             
             $resourceGroup = "azure-rg"
