@@ -750,4 +750,17 @@ return @"
                 -OrchestratorApiToken "something secret" | Should -BeTrue
         }
     }
+
+    Context 'Sad path' {
+        It 'Returns false when failed to connect' {
+            Mock -Verifiable -CommandName cmd { return "Failure!!" } -ModuleName $moduleName
+
+            Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" | Should -BeFalse
+        }
+    }
 }

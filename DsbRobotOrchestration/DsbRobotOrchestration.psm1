@@ -1100,7 +1100,6 @@ function Connect-RobotVmOrchestrator {
             $waitForRobotSVC = Wait-ForService "UiPath Robot*" "00:01:20"
         }
 
-        # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
         Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
         Write-Host "Running robot.exe connection command"
         $cmdArgList = @(
