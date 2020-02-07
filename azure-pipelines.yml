@@ -33,8 +33,7 @@ stages:
         Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        ls
-        Invoke-Pester -PassThru -CodeCoverage ./$(powershellModuleName)/$(powershellModuleName)
+        Invoke-Pester -PassThru -CodeCoverage ./$(powershellModuleName)/$(powershellModuleName).psm1
       displayName: Run pester tests with code coverage
       workingDirectory: $(Build.Repository.LocalPath)
       env:
