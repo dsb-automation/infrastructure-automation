@@ -33,7 +33,8 @@ stages:
         Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        $result = Invoke-Pester -PassThru -CodeCoverage ./($powershellModuleName)/($powershellModuleName).psm1
+        pwd
+        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.Repository.LocalPath)/($powershellModuleName)/($powershellModuleName).psm1
         if ($result.failedCount -ne 0) { 
             Write-Error "Pester returned errors"
         }
