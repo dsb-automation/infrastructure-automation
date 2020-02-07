@@ -5,8 +5,6 @@ pr:
 
 variables:
 - group: 'orch-key-vault-dev'
-- name: 'onPremWindowsAgent'
-  value: 'DsbWindowsAgents'
 - name: 'powershellModuleName'
   value: 'DsbRobotOrchestration'
 - name: 'runTestsWithCoverage'
