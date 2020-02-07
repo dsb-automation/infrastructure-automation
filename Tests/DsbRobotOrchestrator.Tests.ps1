@@ -667,7 +667,7 @@ Describe 'Get-SendSmsBlob' {
 }
 
 Describe 'Invoke-AzureRmVmScript' {
-    Mock -Verifiable -CommandName Get-AzureRmVM { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
+    Mock -CommandName Get-AzureRmVM { [PSCustomObject]@{Location = "blah" } } -ModuleName $moduleName
     Mock -Verifiable -CommandName Remove-AzureRmVMCustomScriptExtension -ModuleName $moduleName
     Mock -Verifiable -CommandName Get-AzureRmStorageAccountKey -ModuleName $moduleName
     Mock -Verifiable -CommandName New-AzureStorageContext -ModuleName $moduleName
