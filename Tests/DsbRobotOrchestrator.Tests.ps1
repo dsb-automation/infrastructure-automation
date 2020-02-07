@@ -722,12 +722,10 @@ Describe 'Invoke-AzureRmVmScript' {
 }
 
 Describe 'Connect-RobotVmOrchestrator' {
-    Context 'Happy path' {
-        It 'Returns true when successfully connected' {
-            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
-            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-            Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
-            Mock -Verifiable -CommandName Download-String {
+    Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Download-String {
 return @"
 [
     {
@@ -736,9 +734,12 @@ return @"
     }
 ]
 "@ } -ModuleName $moduleName
-            Mock -Verifiable -CommandName Get-Service -ModuleName $moduleName
-            Mock -Verifiable -CommandName Start-Process -ModuleName $moduleName
-            Mock -Verifiable -CommandName Wait-ForService -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-Service -ModuleName $moduleName
+    Mock -Verifiable -CommandName Start-Process -ModuleName $moduleName
+    Mock -Verifiable -CommandName Wait-ForService -ModuleName $moduleName
+
+    Context 'Happy path' {
+        It 'Returns true when successfully connected' {
             Mock -Verifiable -CommandName cmd { $null } -ModuleName $moduleName
 
             Connect-RobotVmOrchestrator `
