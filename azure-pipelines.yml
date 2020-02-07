@@ -33,10 +33,7 @@ stages:
         Install-Module -Name functional -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        Invoke-Pester
-        if ($result.failedCount -ne 0) { 
-            Write-Error "Pester returned errors"
-        }
+        Invoke-Pester -PassThru -CodeCoverage $(Build.Repository.LocalPath)/infrastructure-automation/$(powershellModuleName)/$(powershellModuleName)
       displayName: Run pester tests with code coverage
       workingDirectory: $(Build.Repository.LocalPath)
       env:
