@@ -44,7 +44,7 @@ stages:
         if ($results.failedCount -ne 0) { 
             Throw "There were failing tests"
         }
-      displayName: Run pester tests with code coverage
+      displayName: Run pester tests with or without code coverage
       workingDirectory: $(Build.Repository.LocalPath)
       env:
         HUMIO_INGEST_TOKEN: $(humio-ingest-token)

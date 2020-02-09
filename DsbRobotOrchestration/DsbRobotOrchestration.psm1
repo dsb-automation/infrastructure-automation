@@ -147,6 +147,9 @@ function Download-String {
     Write-Log -LogPath $FullLogPath -Message "Attempting to download string from url: $Url" -Severity "Info"
 
     $wc = New-Object System.Net.WebClient
+    if ($AuthToken) {
+        $wc.Headers.add('Authorization', $AuthToken)
+    }
     $machineString = $wc.DownloadString($Url)
 
     return $machineString
@@ -1016,6 +1019,259 @@ function Invoke-AzureRmVmScript {
     }
 }
 
+function Connect-RobotVmOrchestrator {
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $LogPath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $LogName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $OrchestratorUrl,
+
+        [Parameter(Mandatory = $true)]
+        [string] $OrchestratorApiUrl,
+
+        [Parameter(Mandatory = $true)]
+        [string] $OrchestratorApiToken
+    )
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
+    Start-Log -LogPath $LogPath -LogName $LogName
+
+    $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
+    Write-Host "Robot exe is $robotExePath"
+    Write-Log -LogPath $fullLogPath -Message "Robot exe is $robotExePath" -Severity 'Info'
+
+    If (-Not (Test-Path $robotExePath)) {
+        $errorString = "No robot exe was found on the $env:computername"
+        Write-Log -LogPath $fullLogPath -Message $errorString -Severity 'Error'
+        $formattedError = New-Object System.Exception $errorString
+        Throw $formattedError 
+    } else {
+        Write-Host "Robot exe found at $robotExePath"
+        Write-Log -LogPath $fullLogPath -Message "Robot exe found at $robotExePath" -Severity 'Info'
+    }
+
+    Write-Host "Orchestrator API Url is $OrchestratorApiUrl"
+    Write-Log -LogPath $fullLogPath -Message "Orchestrator API Url is $OrchestratorApiUrl" -Severity "Info"
+
+    $connectOutput = $Null
+    $machinesUrl = "$OrchestratorApiUrl/api/v1/all-machines"
+    Write-Host "Url for retrieving machine keys is $machinesUrl"
+    Write-Log -LogPath $fullLogPath -Message "Url for retrieving machine keys is $machinesUrl" -Severity "Info"
+
+    $machineString = Download-String -FullLogPath $fullLogPath `
+        -Url $machinesUrl `
+        -AuthToken $OrchestratorApiUrl
+    Write-Host "Machines are $machineString"
+
+    $machines =  $machineString | ConvertFrom-Json
+
+    $RobotKey = $null
+    ForEach ($machine in $machines) {
+        If ($env:computername -eq $machine.name) {
+            $RobotKey = $machine.key
+        }
+    }
+
+    Write-Host "RobotKey is null: " ($RobotKey -eq $null)
+    If ($RobotKey -eq $null) {
+        $errorString = "No license key found for machine: $env:computername"
+        Write-Log -LogPath $fullLogPath -Message $errorString -Severity 'Info'
+        Write-Host $errorString
+        $formattedError = New-Object System.Exception $errorString
+        Throw $formattedError
+    }
+
+    Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
+    Write-Host "License key for $env:computername is: $RobotKey"
+    Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $OrchestratorUrl" -Severity 'Info'
+    Write-Host "Orchestrator URL to connect to is: $OrchestratorUrl"
+
+    $service = Get-Service -DisplayName 'UiPath Robot*'
+    If ($service.Status -eq "Running") {
+        Write-Log -LogPath $fullLogPath -Message "Robot service was running." -Severity 'Info'
+        Write-Host "Robot service was running."
+    } Else {
+        Write-Log -LogPath $fullLogPath -Message "Robot service was not running, starting it now." -Severity 'Info'
+        Write-Host "Robot service was not running, starting it now."
+        Start-Process -FilePath $robotExePath -Wait -Verb runAs -WindowStyle Hidden
+        $waitForRobotSVC = Wait-ForService "UiPath Robot*" "00:01:20"
+    }
+
+    Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
+    Write-Host "Running robot.exe connection command"
+    $cmdArgList = @(
+        "--connect",
+        "-url", "$OrchestratorUrl",
+        "-key", "$RobotKey"
+    )
+
+    Write-Log -LogPath $fullLogPath -Message "Attempting robot connect command" -Severity 'Info'
+    Write-Host "Attempting robot connect command"
+
+    $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
+
+    Write-Host "Connect robot output is: $connectOutput"
+    Write-Log -LogPath $fullLogPath -Message "Connect robot output is: $connectOutput" -Severity 'Info'
+
+    If (-Not (($connectOutput -eq $null) -Or ($connectOutput -like "*Orchestrator already connected!*"))) {
+        Write-Log -LogPath $fullLogPath -Message "The robot was not connected correctly: $connectOutput" -Severity 'Error'
+        return $false
+    }
+    Write-Log -LogPath $fullLogPath -Message "Robot was connected correctly" -Severity "Info"
+    Write-Host "Robot was connected correctly"
+    return $true
+}
+
+function Add-Font {
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $FontName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FontFullName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FontDirectory
+    )
+
+    $fontExists = $Null
+
+    Write-Host "Font fullname is: $FontFullName"
+    Write-Host "Font name is: $FontName"
+
+    If (-not(Test-Path "$FontDirectory\$FontName")) {
+        $onlyFontName = $FontName.Substring(0, $FontName.Length - 4)
+
+        Write-Host "Trying to install font: $onlyFontName"
+        
+        Copy-Item $FontFullName -Destination $FontDirectory -Force
+        reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "$onlyFontName (OpenType)" /t REG_SZ /d $FontName /f
+
+        If (-not(Test-Path "$FontDirectory\$FontName")) {
+            $fontExists = $false
+            Write-Host "Font file not found after trying to install it"
+        }
+        Else {
+            $fontExists = $true
+            Write-Host "Successfully installed font $FontName"
+        }
+    }
+    Else {
+        Write-Host "Font $FontName already exists, not installing now"
+        $fontExists = $true
+    }
+
+    return $fontExists
+}
+
+function Install-Fonts {
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+        
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountKey,
+
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountContainer
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
+    $LogName = "Install-Fonts-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+    $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
+
+    Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
+
+    $AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
+    [System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
+    $securityConfig = [Net.ServicePointManager]::SecurityProtocol
+    Write-Host "Current security protocol is: $securityConfig"
+    Write-Log -LogPath $LogFile -Message "Current security protocol is: $securityConfig" -Severity "Info"
+
+    #Temp location
+    $tempDirectory = (Join-Path $ENV:TEMP "ViaOffice-$(Get-Date -f "yyyyMMddhhmmssfff")")
+    New-Item -ItemType Directory -Path $tempDirectory | Out-Null
+    Write-Host "Temp file location is: $tempDirectory"
+    Write-Log -LogPath $LogFile -Message "Temp file location is: $tempDirectory" -Severity "Info"
+
+    Write-Host "Storage container is: $StorageAccountContainer"
+    Write-Log -LogPath $LogFile -Message "Storage container is: $StorageAccountContainer" -Severity "Info"
+
+    Write-Host "Storage account name is: $StorageAccountName"
+    Write-Log -LogPath $LogFile -Message "Storage account name is: $StorageAccountName" -Severity "Info"
+
+    Write-Host "Storage account key is $StorageAccountKey"
+    Write-Log -LogPath $LogFile -Message "Storage account key is $StorageAccountKey" -Severity "Info"
+
+    $via = "ViaOffice"
+    $viaOfficeZip = "$via.zip"
+
+    $fontsFound = New-Object Collections.Generic.List[bool]
+    Try {
+        Get-Blob -FullLogPath $LogFile `
+            -StorageAccountKey $StorageAccountKey `
+            -StorageAccountName $StorageAccountName `
+            -StorageAccountContainer $StorageAccountContainer `
+            -BlobFile $viaOfficeZip `
+            -OutPath $tempDirectory
+
+        $viaExpandedDir = "$tempDirectory\$via"
+        Write-Host "Expanding $tempDirectory/$viaOfficeZip to $viaExpandedDir"
+        Write-Log -LogPath $LogFile -Message "Expanding $tempDirectory/$viaOfficeZip to $viaExpandedDir" -Severity "Info"
+
+        New-Item -ItemType Directory -Path $viaExpandedDir
+        Expand-Archive -Path "$tempDirectory\$viaOfficeZip" -DestinationPath $viaExpandedDir -Force
+
+        If ((Get-ChildItem -Path $viaExpandedDir | Measure-Object).Count -eq 0) {
+            Write-Host "Expanded zip was empty"
+            Write-Log -LogPath $LogFile -Message "Expanded zip was empty" -Severity "Error"
+            Throw "Expanded zip was empty"
+            Break        
+        }
+        
+        $Source = "$viaExpandedDir\*"
+        $FontDirectory = "C:\Windows\Fonts"
+        $Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
+
+        Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach-Object {
+            Write-Host "Font fullname is: $($_.FullName)"
+            Write-Log -LogPath $LogFile -Message "Font fullname is: $($_.FullName)" -Severity "Info"
+
+            Write-Host "Font name is: $($_.Name)"
+            Write-Log -LogPath $LogFile -Message "Font name is: $($_.Name)" -Severity "Info"
+            $fontAddSuccessful = Add-Font -FontName $_.Name -FontFullName $_.FullName -FontDirectory $FontDirectory
+
+            Write-Host "Successfully added font: $fontAddSuccessful"
+            Write-Log -LogPath $LogFile -Message "Successfully added font: $fontAddSuccessful" -Severity "Info"
+            $fontsFound.Add($fontAddSuccessful)
+        }
+
+        Write-Host "Successfully installed fonts"
+        Write-Log -LogPath $LogFile -Message "Successfully installed fonts" -Severity "Info"
+
+        Write-Host "Removing temp directory $tempDirectory"
+        Write-Log -LogPath $LogFile -Message "Removing temp directory $tempDirectory" -Severity "Info"
+        Remove-Item $tempDirectory -Recurse -Force | Out-Null
+    }
+    Catch {
+        Write-Log -LogPath $LogFile -Message "There was an error installing fonts: $_.Exception" -Severity "Error"
+        Write-Host "There was an error installing fonts: $_.Exception"
+        Throw "There was an error installing fonts: $_.Exception"
+    }
+    return (-not ($fontsFound.Contains($false)))
+}
+
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
 Export-ModuleMember -Function Wait-ForService
@@ -1035,3 +1291,5 @@ Export-ModuleMember -Function Get-SendSmsBlob
 Export-ModuleMember -Function Merge-HashTables
 Export-ModuleMember -Function Send-HumioEvent
 Export-ModuleMember -Function Invoke-AzureRmVmScript
+Export-ModuleMember -Function Connect-RobotVmOrchestrator
+Export-ModuleMember -Function Install-Fonts

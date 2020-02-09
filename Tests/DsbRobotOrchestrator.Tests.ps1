@@ -49,7 +49,7 @@ Describe 'Start-Log' {
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $joinedPath } -MockWith { return $false } -ModuleName $moduleName
         Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
 
-        { Start-Log -LogPath $logPath -LogName $logName } | Should -Throw 
+        { Start-Log -LogPath $logPath -LogName $logName } | Should -Throw
     }
 }
 
@@ -717,6 +717,127 @@ Describe 'Invoke-AzureRmVmScript' {
                 -StorageAccountKey $accountKey `
                 -ScriptBlock $scriptBlock `
                 -ExtensionName $extensionName | Should -BeFalse
+        }
+    }
+}
+
+Describe 'Connect-RobotVmOrchestrator' {
+    Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Download-String {
+return @"
+[
+    {
+        "name": "$env:computername",
+        "key": "secret key"
+    }
+]
+"@ } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-Service -ModuleName $moduleName
+    Mock -Verifiable -CommandName Start-Process -ModuleName $moduleName
+    Mock -Verifiable -CommandName Wait-ForService -ModuleName $moduleName
+
+    Context 'Happy path' {
+        It 'Returns true when successfully connected' {
+            Mock -Verifiable -CommandName cmd { $null } -ModuleName $moduleName
+
+            Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" | Should -BeTrue
+        }
+    }
+
+    Context 'Sad path' {
+        It 'Returns false when failed to connect' {
+            Mock -Verifiable -CommandName cmd { return "Failure!!" } -ModuleName $moduleName
+
+            Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" | Should -BeFalse
+        }
+    }
+
+    Context 'Machine to connect does not exist on Orchestrator' {
+        It 'Throws an error' {
+            Mock -Verifiable -CommandName Download-String {
+return @"
+[
+    {
+        "name": "OtherMachine",
+        "key": "super secret"
+                        }
+]
+"@ } -ModuleName $moduleName
+            { Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" } | Should -Throw
+        }
+        It 'Throws error when no robot.exe found' {
+            Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
+
+            { Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" } | Should -Throw
+        }
+    }
+}
+ 
+Describe 'Install-Fonts' {
+    Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Join-Path { return 'c:\testpath' } -ModuleName $moduleName
+    Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+    Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-ChildItem -Parameterfilter { $Path -eq 'c:\testpath\ViaOffice' } -MockWith { [PSCustomObject]@{ Count = 1 } } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Measure-Object { [PSCustomObject]@{ Count = 1 } } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+    Context 'Happy Path' {
+        Mock -Verifiable -CommandName Get-ChildItem -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
+        It 'Returns true if all fonts installed' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container' | Should -BeTrue
+        }
+    }
+
+    Context 'Sad Path' {
+        Mock -Verifiable -CommandName Get-ChildItem -Parameterfilter { 
+            $Path -eq 'c:\testpath\ViaOffice\*' } -MockWith { [PSCustomObject]@{ FullName = 'FontFullname'; Name = 'Fontname' } } -ModuleName $moduleName
+        Mock -Verifiable -CommandName Copy-Item -ModuleName $moduleName
+        Mock -Verifiable -CommandName reg -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path { return $false } -modulename $modulename
+        Mock -Verifiable -CommandName Add-Font { return $false }  -modulename $modulename
+
+        It 'Returns false if font failed to install' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container' | Should -BeFalse
+        }
+
+        It 'Calls Add-Font with correct params' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container'
+
+            Assert-MockCalled Add-Font `
+                -ParameterFilter { $FontName -eq "Fontname" -and $FontFullName -eq "FontFullname" -and $FontDirectory -eq "C:\Windows\Fonts" } `
+                -ModuleName $moduleName 
         }
     }
 }
