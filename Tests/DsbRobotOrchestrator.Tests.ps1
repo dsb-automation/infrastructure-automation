@@ -794,3 +794,50 @@ return @"
         }
     }
 }
+ 
+Describe 'Install-Fonts' {
+    Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+    Mock -Verifiable -CommandName Join-Path { return 'c:\testpath' } -ModuleName $moduleName
+    Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-Blob -ModuleName $moduleName
+    Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+    Mock -Verifiable -CommandName Get-ChildItem -Parameterfilter { $Path -eq 'c:\testpath\ViaOffice' } -MockWith { [PSCustomObject]@{ Count = 1 } } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Measure-Object { [PSCustomObject]@{ Count = 1 } } -ModuleName $moduleName
+    Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
+
+    Context 'Happy Path' {
+        Mock -Verifiable -CommandName Get-ChildItem -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path { return $true } -ModuleName $moduleName
+        It 'Returns true if all fonts installed' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container' | Should -BeTrue
+        }
+    }
+
+    Context 'Sad Path' {
+        Mock -Verifiable -CommandName Get-ChildItem -Parameterfilter { 
+            $Path -eq 'c:\testpath\ViaOffice\*' } -MockWith { [PSCustomObject]@{ FullName = 'FontFullname'; Name = 'Fontname' } } -ModuleName $moduleName
+        Mock -Verifiable -CommandName Copy-Item -ModuleName $moduleName
+        Mock -Verifiable -CommandName reg -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path { return $false } -modulename $modulename
+        Mock -Verifiable -CommandName Add-Font { return $false }  -modulename $modulename
+
+        It 'Returns false if font failed to install' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container' | Should -BeFalse
+        }
+
+        It 'Calls Add-Font with correct params' {
+            Install-Fonts -StorageAccountName 'blah' `
+                -StorageAccountKey 'Something' `
+                -StorageAccountContainer 'Container'
+
+            Assert-MockCalled Add-Font `
+                -ParameterFilter { $FontName -eq "Fontname" -and $FontFullName -eq "FontFullname" -and $FontDirectory -eq "C:\Windows\Fonts" } `
+                -ModuleName $moduleName 
+        }
+    }
+}
