@@ -49,7 +49,7 @@ Describe 'Start-Log' {
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $joinedPath } -MockWith { return $false } -ModuleName $moduleName
         Mock -Verifiable -CommandName New-Item -ModuleName $moduleName
 
-        { Start-Log -LogPath $logPath -LogName $logName } | Should -Throw 
+        { Start-Log -LogPath $logPath -LogName $logName } | Should -Throw
     }
 }
 
@@ -761,6 +761,26 @@ return @"
                 -OrchestratorUrl "orchestrator.com" `
                 -OrchestratorApiUrl "orchestrator-api.com" `
                 -OrchestratorApiToken "something secret" | Should -BeFalse
+        }
+    }
+
+    Context 'Machine to connect does not exist on Orchestrator' {
+        It 'Throws an error' {
+            Mock -Verifiable -CommandName Download-String {
+return @"
+[
+    {
+        "name": "OtherMachine",
+        "key": "super secret"
+                        }
+]
+"@ } -ModuleName $moduleName
+            { Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" } | Should -Throw
         }
     }
 }
