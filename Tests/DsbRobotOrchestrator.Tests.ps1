@@ -782,5 +782,15 @@ return @"
                 -OrchestratorApiUrl "orchestrator-api.com" `
                 -OrchestratorApiToken "something secret" } | Should -Throw
         }
+        It 'Throws error when no robot.exe found' {
+            Mock -Verifiable -CommandName Test-Path { return $false } -ModuleName $moduleName
+
+            { Connect-RobotVmOrchestrator `
+                -LogPath "blah" `
+                -LogName "blah-log" `
+                -OrchestratorUrl "orchestrator.com" `
+                -OrchestratorApiUrl "orchestrator-api.com" `
+                -OrchestratorApiToken "something secret" } | Should -Throw
+        }
     }
 }
