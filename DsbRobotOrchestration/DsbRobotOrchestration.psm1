@@ -1269,7 +1269,11 @@ function Install-Fonts {
         Write-Host "There was an error installing fonts: $_.Exception"
         Throw "There was an error installing fonts: $_.Exception"
     }
-    return (-not ($fontsFound.Contains($false)))
+    Write-Log -LogPath $LogFile -Message "fontsFound is: $fontsFound" -Severity "Info"
+
+    $fontInstallSuccessful = (-not ($fontsFound.Contains($false)))
+    Write-Log -LogPath $LogFile -Message "fontInstallSuccessful result is: $fontInstallSuccessful" -Severity "Info"
+    return $fontInstallSuccessful
 }
 
 Export-ModuleMember -Function Start-Log
