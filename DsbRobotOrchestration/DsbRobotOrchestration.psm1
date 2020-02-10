@@ -1065,7 +1065,7 @@ function Connect-RobotVmOrchestrator {
 
     $machineString = Download-String -FullLogPath $fullLogPath `
         -Url $machinesUrl `
-        -AuthToken $OrchestratorApiUrl
+        -AuthToken $OrchestratorApiToken
     Write-Host "Machines are $machineString"
 
     $machines =  $machineString | ConvertFrom-Json
@@ -1142,9 +1142,6 @@ function Add-Font {
     )
 
     $fontExists = $Null
-
-    Write-Host "Font fullname is: $FontFullName"
-    Write-Host "Font name is: $FontName"
 
     If (-not(Test-Path "$FontDirectory\$FontName")) {
         $onlyFontName = $FontName.Substring(0, $FontName.Length - 4)
