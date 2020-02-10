@@ -1270,7 +1270,9 @@ function Install-Fonts {
 
     $fontInstallSuccessful = (-not ($fontsFound.Contains($false)))
     Write-Log -LogPath $LogFile -Message "fontInstallSuccessful result is: $fontInstallSuccessful" -Severity "Info"
-    return $fontInstallSuccessful
+
+    $returnBoolean = [System.Convert]::ToBoolean($fontInstallSuccessful)
+    return $returnBoolean
 }
 
 Export-ModuleMember -Function Start-Log
